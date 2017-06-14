@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#if MGOS_ENABLE_ARDUINO_API && MGOS_ENABLE_ONEWIRE
+#if MGOS_ENABLE_ONEWIRE
 
 // Initialize DallasTemperature driver.
 // Return value: handle opaque pointer.
@@ -180,7 +180,7 @@ bool mgos_arduino_dt_has_alarm(DallasTemperature *dt, const char *addr);
 // Return always false if an operaiton failed.
 bool mgos_arduino_dt_has_alarms(DallasTemperature *dt);
 
-#endif /* MGOS_ENABLE_ARDUINO_API && MGOS_ENABLE_ONEWIRE */
+#endif /* MGOS_ENABLE_ONEWIRE */
 
 #ifdef __cplusplus
 }
