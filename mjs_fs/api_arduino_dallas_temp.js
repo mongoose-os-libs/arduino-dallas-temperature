@@ -1,5 +1,5 @@
 // Arduino DallasTemperature library API. Source C API is defined at:
-// [mgos_arduino_dallas_temp.h](https://github.com/cesanta/mongoose-os/blob/master/mos_libs/arduino-dallas-temperature/src/mgos_arduino_dallas_temp.h)
+// [mgos_arduino_dallas_temp.h](https://github.com/mongoose-os-libs/arduino-dallas-temperature/blob/master/src/mgos_arduino_dallas_temp.h)
 
 let DallasTemperature = {
   // Error codes
