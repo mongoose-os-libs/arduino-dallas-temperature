@@ -8,7 +8,7 @@
 #ifndef _MGOS_ARDUINO_DALLAS_TEMP_H_
 #define _MGOS_ARDUINO_DALLAS_TEMP_H_
 
-#include "fw/src/mgos_features.h"
+#include "mgos_features.h"
 #include "DallasTemperature.h"
 
 #ifdef __cplusplus
