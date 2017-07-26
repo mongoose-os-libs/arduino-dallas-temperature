@@ -9,7 +9,12 @@
 #define _MGOS_ARDUINO_DALLAS_TEMP_H_
 
 #include "mgos_features.h"
+#include "mgos_arduino_onewire.h"
+#ifdef __cplusplus
 #include "DallasTemperature.h"
+#else
+typedef struct DallasTemperatureTag DallasTemperature;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
