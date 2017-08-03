@@ -8,7 +8,6 @@
 #ifndef _MGOS_ARDUINO_DALLAS_TEMP_H_
 #define _MGOS_ARDUINO_DALLAS_TEMP_H_
 
-#include "mgos_features.h"
 #include "mgos_arduino_onewire.h"
 #ifdef __cplusplus
 #include "DallasTemperature.h"
@@ -19,8 +18,6 @@ typedef struct DallasTemperatureTag DallasTemperature;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#if MGOS_ENABLE_ONEWIRE
 
 // Initialize DallasTemperature driver.
 // Return value: handle opaque pointer.
@@ -184,8 +181,6 @@ bool mgos_arduino_dt_has_alarm(DallasTemperature *dt, const char *addr);
 // Returns true if any device is reporting an alarm on the bus
 // Return always false if an operaiton failed.
 bool mgos_arduino_dt_has_alarms(DallasTemperature *dt);
-
-#endif /* MGOS_ENABLE_ONEWIRE */
 
 #ifdef __cplusplus
 }

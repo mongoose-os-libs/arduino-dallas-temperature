@@ -7,8 +7,6 @@
 
 #include "mgos_arduino_dallas_temp.h"
 
-#if MGOS_ENABLE_ONEWIRE
-
 DallasTemperature *mgos_arduino_dt_create(OneWire *ow) {
   if (ow == nullptr) return nullptr;
   return new DallasTemperature(ow);
@@ -205,5 +203,3 @@ bool mgos_arduino_dt_has_alarms(DallasTemperature *dt) {
   if (dt == nullptr) return false;
   return dt->hasAlarm();
 }
-
-#endif /* MGOS_ENABLE_ONEWIRE */
