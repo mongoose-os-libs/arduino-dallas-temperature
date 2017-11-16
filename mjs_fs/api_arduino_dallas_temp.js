@@ -38,13 +38,13 @@ let DallasTemperature = {
   _isppm: ffi('int mgos_arduino_dt_is_parasite_power_mode(void *)'),
   _iscc: ffi('int mgos_arduino_dt_is_conversion_complete(void *)'),
   _mtwfc: ffi('int mgos_arduino_dt_millis_to_wait_for_conversion(void *, int)'),
-  _shat: ffi('void mgos_arduino_dt_set_high_alarm_temp(char *, int)'),
-  _slat: ffi('void mgos_arduino_dt_set_low_alarm_temp(char *, int)'),
-  _ghat: ffi('int mgos_arduino_dt_get_high_alarm_temp(char *)'),
-  _glat: ffi('int mgos_arduino_dt_get_low_alarm_temp(char *)'),
+  _shat: ffi('void mgos_arduino_dt_set_high_alarm_temp(void *, int)'),
+  _slat: ffi('void mgos_arduino_dt_set_low_alarm_temp(void *, int)'),
+  _ghat: ffi('int mgos_arduino_dt_get_high_alarm_temp(void *)'),
+  _glat: ffi('int mgos_arduino_dt_get_low_alarm_temp(void *)'),
   _ras: ffi('void mgos_arduino_dt_reset_alarm_search(void *)'),
-  _as: ffi('int mgos_arduino_dt_alarm_search(void *, char *)'),
-  _ha: ffi('int mgos_arduino_dt_has_alarm(void *, char *)'),
+  _as: ffi('int mgos_arduino_dt_alarm_search(void *, void *)'),
+  _ha: ffi('int mgos_arduino_dt_has_alarm(void *, void *)'),
   _has: ffi('int mgos_arduino_dt_has_alarms(void *)'),
 
   _byte2hex: function(byte) {
@@ -52,69 +52,141 @@ let DallasTemperature = {
     return hex_char[(byte >> 4) & 0x0F] + hex_char[byte & 0x0F];
   },
 
+  // ## **`DallasTemperature.create(ow)`**
+  // Create and return an instance of the dallas temperature: an object with
+  // methods described below. `ow` is an OneWire instance.
+  //
+  // Example:
+  // ```javascript
+  // let ow = OneWire(12 /* onewire pin number */);
+  // let myDT = DallasTemperature.create(ow);
+  // ```
+  create: function(ow) {
+    let obj = Object.create(DallasTemperature._proto);
+    // Initialize DallasTemperature library.
+    // Return value: handle opaque pointer.
+    obj.dt = DallasTemperature._create(ow.ow);
+    return obj;
+  },
+
   _proto: {
+    // ## **`myDT.close()`**
     // Close DallasTemperature handle. Return value: none.
     close: function() {
       return DallasTemperature._close(this.dt);
     },
 
-    // Initialise 1-Wire bus
+    // ## **`myDT.begin()`**
+    // Initialise the sensor. Return value: none.
     begin: function() {
       return DallasTemperature._begin(this.dt);
     },
 
-    // Returns the number of devices found on the bus.
-    // Returns always 0 if an operaiton failed.
+    // ## **`myDT.getDeviceCount()`**
+    // Return the number of devices found on the bus.
+    // If an operaiton is failed, 0 is returned.
     getDeviceCount: function() {
       return DallasTemperature._gdc(this.dt);
     },
 
-    // Returns 1 if address is valid.
-    // Return always 0 if an operaiton failed.
+    // ## **`myDT.validAddress(addr)`**
+    // Check if given onewire `addr` (8-byte string) is valid; returns 1 if it
+    // is, or 0 otherwise.
     validAddress: function(addr) {
       return DallasTemperature._va(this.dt, addr);
     },
 
-    // Returns 1 if address is of the family of sensors the lib supports.
-    // Return always 0 if an operaiton failed.
+    // ## **`myDT.validFamily(addr)`**
+    // Return 1 if onewire address `addr` (8-byte string) is of the family of
+    // sensors the lib supports.  Return always 0 if an operaiton failed.
     validFamily: function(addr) {
       return DallasTemperature._vf(this.dt, addr);
     },
 
-    // Finds an address at a given index on the bus.
-    // Return 0 if the device was not found or an operaiton failed.
-    // Returns 1 otherwise.
+    // ## **`myDT.getAddress(addr, idx)`**
+    // Find an onewire address at a given index `idx` on the bus. Resulting
+    // address is written into the provided string buffer `addr`, which should
+    // be 8 bytes lont.
+    // Return value: 1 in case of success, 0 otherwise.
+    // Example:
+    // ```javascript
+    // load("api_sys.js");
+    // load("api_arduino_dallas_temp.js");
+    //
+    // let addr = Sys._sbuf(8);
+    // let res = myDT.getAddress(addr, 0);
+    // if (res === 1) {
+    //   print("found:", addr);
+    // } else {
+    //   print("not found");
+    // }
+    // ```
     getAddress: function(addr, idx) {
       return DallasTemperature._ga(this.dt, addr, idx);
     },
 
-    // Attempt to determine if the device at the given address is connected to the bus.
-    // Return 0 if the device is not connected or an operaiton failed.
-    // Returns 1 otherwise.
+    // ## **`myDT.isConnected(addr)`**
+    // Determine if the device at the given onewire address (8-byte string) is
+    // connected to the bus.
+    // Return value: 1 if device is connected, 0 otherwise.
     isConnected: function(addr) {
       return DallasTemperature._isc(this.dt, addr);
     },
 
-    // Attempt to determine if the device at the given address is connected to the bus.
-    // Also allows for updating the read scratchpad.
-    // Return false if the device is not connected or an operaiton failed.
-    // Returns true otherwise.
-    isConnectedUpdateScratchPad: function(addr, sp) {
+    // ## **`myDT.isConnectedWithScratchPad(addr, sp)`**
+    // Determine if the device at the given onewire address (8-byte string) is
+    // connected to the bus, and if so, read the scratch pad to the provided
+    // buffer (9-byte string).
+    // Return value: 1 if device is connected (and a scratchpad is read), 0
+    // otherwise.
+    // Example:
+    // ```javascript
+    // load("api_sys.js");
+    // load("api_arduino_dallas_temp.js");
+    //
+    // let sp = Sys._sbuf(9);
+    // let res = myDT.isConnectedWithScratchPad("\x28\xff\x2b\x45\x4c\x04\x00\x10", sp);
+    // if (res === 1) {
+    //   print("connected, scratchpad:", sp);
+    // } else {
+    //   print("not connected");
+    // }
+    // ```
+    isConnectedWithScratchPad: function(addr, sp) {
       return DallasTemperature._iscsp(this.dt, addr, sp);
     },
 
+    // ## **`myDT.readScratchPad(addr, sp)`**
     // Read device's scratchpad.
-    // Return 0 if an operaiton failed.
-    // Returns 1 otherwise.
+    // `sp` is a string buffer (minimum 9 bytes length) to read scratchpad
+    // into.
+    // Return 1 in case of success, 0 otherwise.
+    // Example:
+    // ```javascript
+    // load("api_sys.js");
+    // load("api_arduino_dallas_temp.js");
+    //
+    // let sp = Sys._sbuf(9);
+    // let res = myDT.readScratchPad("\x28\xff\x2b\x45\x4c\x04\x00\x10", sp);
+    // if (res === 1) {
+    //   print("scratchpad:", sp);
+    // } else {
+    //   print("failed to read scratchpad");
+    // }
+    // ```
     readScratchPad: function(addr, sp) {
       return DallasTemperature._rsp(this.dt, addr, sp);
     },
 
-    // Write device's scratchpad.
+    // ## **`myDT.writeScratchPad(addr, sp)`**
+    // Write device's scratchpad `sp` (which should be a 9-byte string) by
+    // the provided onewire address `addr` (a 8-byte string).
+    // Return value: none.
     writeScratchPad: function(addr, sp) {
       return DallasTemperature._wsp(this.dt, addr, sp);
     },
 
+    // ## **`myDT.readPowerSupply()`**
     // Read device's power requirements.
     // Return 1 if device needs parasite power.
     // Return always 0 if an operaiton failed.
@@ -122,178 +194,229 @@ let DallasTemperature = {
       return DallasTemperature._rps(this.dt, addr);
     },
 
-    // Get global resolution.
+    // ## **`myDT.getGlobalResolution()`**
+    // Get global resolution in bits. Return value: 9, 10, 11 or 12.
+    // In case of a failure, returns 0.
     getGlobalResolution: function() {
       return DallasTemperature._ggr(this.dt);
     },
 
-    // Set global resolution to 9, 10, 11, or 12 bits.
+    // ## **`myDT.setGlobalResolution(res)`**
+    // Set global resolution `res` in bits, which can be either 9, 10, 11, or
+    // 12. If given resolution is out of range, 9 bits is used.
+    // Return value: none.
     setGlobalResolution: function(res) {
       return DallasTemperature._sgr(this.dt, res);
     },
     
-    // Returns the device resolution: 9, 10, 11, or 12 bits.
-    // Returns 0 if device not found or if an operaiton failed.
+    // ## **`myDT.getResolution(addr)`**
+    // Get device's resolution in bits. Return value: 9, 10, 11 or 12.
+    // In case of a failure, returns 0.
     getResolution: function(addr) {
       return DallasTemperature._gr(this.dt, addr);
     },
 
-    // Set resolution of a device to 9, 10, 11, or 12 bits
-    // If new resolution is out of range, 9 bits is used.
-    // Return 1 if a new value was stored.
-    // Returns 0 otherwise.
+    // ## **`myDT.setResolution(addr, res, skip)`**
+    // Set resolution of a device with onewire address `addr` to 9, 10, 11, or
+    // 12 bits.  If given resolution is out of range, 9 bits is used.
+    // Return 1 in case of success, 0 otherwise.
     setResolution: function(addr, res, skip) {
       return DallasTemperature._sr(this.dt, addr, res, skip);
     },
 
-    // Sets/gets the waitForConversion flag.
+    // ## **`myDT.setWaitForConversion(waitForConversion)`**
+    // Set/clear the waitForConversion flag.
+    // Return value: none.
     setWaitForConversion: function(f) {
       return DallasTemperature._swfc(this.dt, f);
     },
 
-    // Gets the value of the waitForConversion flag.
-    // Return always 0 if an operaiton failed.
+    // ## **`myDT.getWaitForConversion()`**
+    // Get the value of the waitForConversion flag: either 1 or 0. In case
+    // of a failure, return 0.
     getWaitForConversion: function() {
       return DallasTemperature._gwfc(this.dt);
     },
 
-    // Sets the checkForConversion flag.
+    // ## **`myDT.setCheckForConversion(checkForConversion)`**
+    // Set/clear the `checkForConversion` flag.
     setCheckForConversion: function(f) {
       return DallasTemperature._scfc(this.dt, f);
     },
 
-    // Gets the value of the waitForConversion flag.
-    // Return always 0 if an operaiton failed.
+    // ## **`myDT.getCheckForConversion()`**
+    // Get the value of the `checkForConversion` flag: either 1 or 0. In case
+    // of a failure, return 0.
     getCheckForConversion: function() {
       return DallasTemperature._gcfc(this.dt);
     },
 
-    // Sends command for all devices on the bus to perform a temperature conversion.
-    // Returns 0 if a device is disconnected or if an operaiton failed.
-    // Returns 1 otherwise.
+    // ## **`myDT.requestTemperatures()`**
+    // Send command for all devices on the bus to perform a temperature
+    // conversion.
+    //
+    // Return value: 1 in case of success, 0 otherwise.
     requestTemperatures: function() {
       return DallasTemperature._rts(this.dt);
     },
 
-    // Sends command for one device to perform a temperature conversion by address.
-    // Returns 0 if a device is disconnected or if an operaiton failed.
-    // Returns 1  otherwise.
+    // ## **`myDT.requestTemperaturesByAddress(addr)`**
+    // Send command to a device with the given onewire address `addr` to
+    // perform a temperature conversion.
+    //
+    // Return value: 1 in case of success, 0 otherwise.
     requestTemperaturesByAddress: function(addr) {
       return DallasTemperature._rtsba(this.dt, addr);
     },
 
-    // Sends command for one device to perform a temperature conversion by index.
-    // Returns 0 if a device is disconnected or if an operaiton failed.
-    // Returns 1 otherwise.
+    // ## **`myDT.requestTemperaturesByIndex(idx)`**
+    // Send command to a device with the given index `idx` to perform a
+    // temperature conversion.
+    //
+    // Return value: 1 in case of success, 0 otherwise.
     requestTemperaturesByIndex: function(idx) {
       return DallasTemperature._rtsbi(this.dt, idx);
     },
 
-    // Returns temperature raw value (12 bit integer of 1/128 degrees C)
-    // or DEVICE_DISCONNECTED_RAW if an operaiton failed.
+    // ## **`myDT.getTemp(addr)`**
+    // Return raw temperature value (12 bit integer of 1/128 degrees C)
+    // or `DallasTemperature.DEVICE_DISCONNECTED_RAW` in case of a failure.
     getTemp: function(addr) {
       // C-functions output value of “1234” equals 12.34 Deg.
       return DallasTemperature._gt(this.dt, addr) / 100.0;
     },
 
-    // Returns temperature in degrees C
-    // or DEVICE_DISCONNECTED_C if an operaiton failed.
+    // ## **`myDT.getTempC(addr)`**
+    // Returns temperature in degrees C or
+    // `DallasTemperature.DEVICE_DISCONNECTED_C` in case of a failure.
     getTempC: function(addr) {
       // C-functions output value of “1234” equals 12.34 Deg.
       return DallasTemperature._gtc(this.dt, addr) / 100.0;
     },
 
-    // Returns temperature in degrees F
-    // or DEVICE_DISCONNECTED_F if an operaiton failed.
+    // ## **`myDT.getTempF(addr)`**
+    // Returns temperature in degrees F or
+    // `DallasTemperature.DEVICE_DISCONNECTED_F` in case of a failure.
     getTempF: function(addr) {
       // C-functions output value of “1234” equals 12.34 Deg.
       return DallasTemperature._gtf(this.dt, addr) / 100.0;
     },
 
-    // Get temperature for device index in degrees C (slow)
-    // or DEVICE_DISCONNECTED_C if an operaiton failed.
+    // ## **`myDT.getTempCByIndex(idx)`**
+    // Get temperature from the device with the given index `idx` in degrees C,
+    // or `DallasTemperature.DEVICE_DISCONNECTED_C` in case of a failure.
     getTempCByIndex: function(idx) {
       // C-functions output value of “1234” equals 12.34 Deg.
       return DallasTemperature._gtcbi(this.dt, idx) / 100.0;
     },
 
-    // Get temperature for device index in degrees F (slow)
-    // or DEVICE_DISCONNECTED_F if an operaiton failed.
+    // ## **`myDT.getTempFByIndex(idx)`**
+    // Get temperature from the device with the given index `idx` in degrees F,
+    // or `DallasTemperature.DEVICE_DISCONNECTED_F` in case of a failure.
     getTempFByIndex: function(idx) {
       // C-functions output value of “1234” equals 12.34 Deg.
       return DallasTemperature._gtfbi(this.dt, idx) / 100.0;
     },
 
-    // Returns 1 if the bus requires parasite power.
-    // Returns always 0 if an operaiton failed.
+    // ## **`myDT.isParasitePowerMode()`**
+    // Return 1 if the bus requires parasite power, 0 otherwise. In case of a
+    // failure return 0.
     isParasitePowerMode: function() {
       return DallasTemperature._isppm(this.dt);
     },
     
-    // Is a conversion complete on the wire?
-    // Return always 0 if an operaiton failed.
+    // ## **`myDT.isConversionComplete()`**
+    // Return whether a conversion is completed.
     isConversionComplete: function() {
       return DallasTemperature._iscc(this.dt);
     },
 
-    // Returns number of milliseconds to wait till conversion is complete (based on IC datasheet)
-    // or 0 if an operaiton failed.
+    // ## **`myDT.millisToWaitForConversion(res)`**
+    // Return number of milliseconds to wait until the conversion is completed
+    // for the given resolution `res` in bits (9, 10, 11 or 12).
+    // In case of a failure, return 0.
     millisToWaitForConversion: function(res) {
       return DallasTemperature._mtwfc(this.dt, res);
     },
 
-    // Sets the high alarm temperature for a device.
-    // Accepts a char. Valid range is -55C - 125C.
+    // ## **`myDT.setHighAlarmTemp(grc)`**
+    // Set the upper alarm temperature (in degrees C) for a device; valid range
+    // for `grc` is from -55 to 125.
+    // Return value: none.
     setHighAlarmTemp: function(grc) {
       return DallasTemperature._shat(this.dt, grc);
     },
 
-    // Sets the low alarm temperature for a device.
-    // Accepts a char. Valid range is -55C - 125C.
+    // ## **`myDT.setLowAlarmTemp()`**
+    // Set the lower alarm temperature (in degrees C) for a device; valid range
+    // for `grc` is from -55 to 125.
+    // Return value: none.
     setLowAlarmTemp: function(grc) {
       return DallasTemperature._slat(this.dt, grc);
     },
 
-    // Returns a signed char with the current high alarm temperature for a device
-    // in the range -55C - 125C or DEVICE_DISCONNECTED_C if an operaiton failed.
+    // ## **`myDT.getHighAlarmTemp()`**
+    // Return upper alarm temperature in degrees C (from -55 to 125), or
+    // `DallasTemperature.DEVICE_DISCONNECTED_C` in case of a failure.
     getHighAlarmTemp: function() {
       return DallasTemperature._ghat(this.dt);
     },
 
-    // Returns a signed char with the current low alarm temperature for a device
-    // in the range -55C - 125C or DEVICE_DISCONNECTED_C if an operaiton failed.
+    // ## **`myDT.getHighAlarmTemp()`**
+    // Return lower alarm temperature in degrees C (from -55 to 125), or
+    // `DallasTemperature.DEVICE_DISCONNECTED_C` in case of a failure.
     getLowAlarmTemp: function() {
       return DallasTemperature._glat(this.dt);
     },
 
-    // Resets internal variables used for the alarm search.
-    resetAlarmSearch: function() {
-      return DallasTemperature._ras(this.dt);
-    },
-
+    // ## **`myDT.alarmSearch(addr)`**
     // Search the wire for devices with active alarms.
-    // Returns true then it has enumerated the next device.
-    // Returns false if there are no devices or an operaiton failed.
-    // If a new device is found then its address is copied to param #2.
-    // Use resetAlarmSearch to start over.
+    //
+    // `addr` should be a string buffer of at least 8 bytes.
+    //
+    // If the next device is found, 1 is returned and the device's address
+    // is written to `addr`; otherwise 0 is returned.
+    //
+    // Use `myDT.resetAlarmSearch()` to start over.
+    // Example:
+    // ```javascript
+    // load("api_sys.js");
+    // load("api_arduino_dallas_temp.js");
+    //
+    // print("Looking for devices with active alarms...");
+    // let addr = Sys._sbuf(8);
+    // while (myDT.alarmSearch(addr) === 1) {
+    //   print("Found:", addr);
+    // }
+    // print("Done.");
+    // ```
     alarmSearch: function(addr) {
       return DallasTemperature._as(this.dt, addr);
     },
 
-    // Returns true if device address might have an alarm condition
-    // (only an alarm search can verify this).
-    // Return always false if an operaiton failed.
+    // ## **`myDT.resetAlarmSearch()`**
+    // Reset alarm search.
+    // Return value: none.
+    resetAlarmSearch: function() {
+      return DallasTemperature._ras(this.dt);
+    },
+
+    // ## **`myDT.hasAlarm(addr)`**
+    // Return 1 if device with the given onewire address has active alarm;
+    // 0 otherwise. In case of a failure, 0 is returned.
     hasAlarm: function(addr) {
       return DallasTemperature._ha(this.dt, addr);
     },
 
-    // Returns true if any device is reporting an alarm on the bus
-    // Return always false if an operaiton failed.
+    // ## **`myDT.hasAlarms()`**
+    // Return 1 if any device on the bus has active alarm; 0 otherwise.
+    // In case of a failure, 0 is returned.
     hasAlarms: function() {
       return DallasTemperature._has(this.dt);
     },
 
-    // Get device address in hex format
+    // ## **`myDT.toHexStr(addr)`**
+    // Return device address `addr` in the hex format.
     toHexStr: function(addr) {
       let res = '';
       for (let i = 0; i < addr.length; i++) {
@@ -301,13 +424,5 @@ let DallasTemperature = {
       }
       return res;
     },
-  },
-
-  create: function(ow) {
-    let obj = Object.create(DallasTemperature._proto);
-    // Initialize DallasTemperature library.
-    // Return value: handle opaque pointer.
-    obj.dt = DallasTemperature._create(ow.ow);
-    return obj;
   },
 };
