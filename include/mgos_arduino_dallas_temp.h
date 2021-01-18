@@ -29,6 +29,9 @@ typedef struct DallasTemperatureTag DallasTemperature;
 extern "C" {
 #endif
 
+// Auto-created, config-controlled singleton.  NULL unless enabled.
+extern DallasTemperature *mgos_ds18x;
+
 // Initialize DallasTemperature driver.
 // Return value: handle opaque pointer.
 DallasTemperature *mgos_arduino_dt_create(OneWire *ow);
