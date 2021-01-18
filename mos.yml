@@ -5,6 +5,7 @@ version: 1.0
 
 modules:
   - location: https://github.com/milesburton/Arduino-Temperature-Control-Library
+    version: 798cfc217ad9b9fd3a0ecaae7613056f5cf890da
     name: dtcl
 
 sources:
