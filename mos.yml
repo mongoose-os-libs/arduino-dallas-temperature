@@ -20,6 +20,10 @@ libs:
   - origin: https://github.com/mongoose-os-libs/arduino-compat
   - origin: https://github.com/mongoose-os-libs/arduino-onewire
 
+config_schema:
+  - ["ds18x", "o", {"title":"DTCL (Dallas Temperature Control Library) settings"}]
+  - ["ds18x.pin", "i", -1, {"title": "GPIO for 1-wire link; -1 disables DTCL singleton"}]
+
 tags:
   - arduino
   - c
