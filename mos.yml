@@ -13,8 +13,7 @@ libs:
 
 config_schema:
   - ["ds18x", "o", {"title":"DTCL (Dallas Temperature Control Library) settings"}]
-  - ["ds18x.enable", "b", false, {"title": "Create DTCL singleton object"}]
-  - ["ds18x.pin", "i", 33, {"title": "GPIO for 1-wire connection"}]
+  - ["ds18x.pin", "i", -1, {"title": "GPIO for 1-wire link; -1 disables DTCL singleton"}]
 
 tags:
   - arduino
