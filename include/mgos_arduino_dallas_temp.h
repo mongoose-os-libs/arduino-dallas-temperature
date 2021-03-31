@@ -32,6 +32,10 @@ extern "C" {
 // Auto-created, config-controlled singleton.  NULL if disabled.
 DallasTemperature *mgos_ds18x_get_global();
 
+// The rlock-protected access to the above.
+DallasTemperature *mgos_ds18x_get_global_locked();
+void mgos_ds18x_put_global_locked();
+
 // Initialize DallasTemperature driver.
 // Return value: handle opaque pointer.
 DallasTemperature *mgos_arduino_dt_create(OneWire *ow);
